@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONO.DUO — Tabungan Berdua</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2canvas for Receipt Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen pb-12 antialiased selection:bg-zinc-800 selection:text-white">
+
+    <!-- Header Navbar Compact for Mobile -->
+    <header class="sticky top-0 z-30 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md px-3 lg:px-8 py-3">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-400 flex items-center justify-center text-zinc-950 font-bold shadow-lg shadow-zinc-900/50 shrink-0">
+                    <i data-lucide="users" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-sm sm:text-lg font-bold tracking-wider text-white truncate">Tabungan</h1>
+                    <p class="text-[10px] sm:text-xs text-zinc-400 font-mono truncate">Berdua</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="openModal('withdrawModal')" class="px-2.5 py-1.5 text-[11px] sm:text-xs font-medium rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition-all flex items-center gap-1 whitespace-nowrap">
+                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-zinc-400"></i>
+                    <span>Tarik</span>
+                </button>
+                <button onclick="openModal('depositModal')" class="px-2.5 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 transition-all flex items-center gap-1 shadow-md shadow-zinc-100/10 whitespace-nowrap">
+                    <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+                    <span>Isi / QR</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 lg:px-8 pt-6 space-y-6">
+
+        <!-- Balance Card -->
+        <div class="relative overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900/90 to-zinc-950 p-6 lg:p-8 shadow-2xl">
+            <div class="absolute -right-12 -top-12 w-48 h-48 bg-zinc-700/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 text-[10px] uppercase font-mono tracking-wider rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/50">
+                            Vault Active
+                        </span>
+                        <span class="text-xs text-zinc-400 flex items-center gap-1">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Terenkripsi Lokal
+                        </span>
+                    </div>
+                    <p class="text-xs text-zinc-400 font-medium">Total Tabungan Berdua</p>
+                    <h2 id="balanceDisplay" class="text-3xl md:text-5xl font-extrabold tracking-tight text-white font-mono">
+                        Rp 0
+                    </h2>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="openModal('depositModal')" class="flex-1 md:flex-none px-4 py-2.5 text-xs font-medium rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 transition-all flex items-center justify-center gap-2 font-semibold">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Isi Tabungan</span>
+                    </button>
+                    <button onclick="openModal('withdrawModal')" class="flex-1 md:flex-none px-4 py-2.5 text-xs font-medium rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="minus-circle" class="w-4 h-4 text-zinc-400"></i>
+                        <span>Tarik Dana</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Target Impian Section -->
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="target" class="w-4 h-4 text-zinc-400"></i>
+                    <h3 class="text-sm font-semibold text-zinc-200">Target Impian Bersama</h3>
+                </div>
+                <button onclick="editTarget()" class="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1 font-mono">
+                    <i data-lucide="edit-3" class="w-3 h-3"></i> Edit Target
+                </button>
+            </div>
+            
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs font-mono">
+                    <span id="targetName" class="text-zinc-300">Liburan / Target Bersama</span>
+                    <span id="targetProgressText" class="text-zinc-400">0% (Rp 0 / Rp 10.000.000)</span>
+                </div>
+                <div class="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-zinc-700/50">
+                    <div id="targetProgressBar" class="h-full bg-gradient-to-r from-zinc-400 to-zinc-100 rounded-full transition-all duration-500 w-0"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-zinc-200">Grafik Alur Tabungan</h3>
+                    <p class="text-xs text-zinc-500">Visualisasi Pemasukan vs Pengeluaran</p>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-mono">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+                        <span class="text-zinc-400">Masuk</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-400 inline-block"></span>
+                        <span class="text-zinc-400">Keluar</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="w-full h-64">
+                <canvas id="financialChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Transaction History -->
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="history" class="w-4 h-4 text-zinc-400"></i>
+                    <h3 class="text-sm font-semibold text-zinc-200">Riwayat Mutasi</h3>
+                </div>
+                <div class="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs font-mono">
+                    <button onclick="filterMutasi('all')" id="btnFilterAll" class="px-2.5 py-1 rounded-lg bg-zinc-800 text-white transition-all">Semua</button>
+                    <button onclick="filterMutasi('in')" id="btnFilterIn" class="px-2.5 py-1 rounded-lg text-zinc-400 hover:text-zinc-200 transition-all">Masuk</button>
+                    <button onclick="filterMutasi('out')" id="btnFilterOut" class="px-2.5 py-1 rounded-lg text-zinc-400 hover:text-zinc-200 transition-all">Keluar</button>
+                </div>
+            </div>
+
+            <div id="txList" class="space-y-2.5">
+                <!-- Transaction list items rendered via JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL 1: ISI SALDO -->
+    <div id="depositModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-5 relative shadow-2xl animate-in">
+            <button onclick="closeModal('depositModal')" class="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-100 border border-zinc-700">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Isi Saldo Tabungan</h3>
+                    <p class="text-xs text-zinc-400">Setor dana ke vault tabungan berdua</p>
+                </div>
+            </div>
+
+            <form onsubmit="handleDepositSubmit(event)" class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-mono text-zinc-400 uppercase">Nominal (Rp)</label>
+                    <input type="number" id="depositAmount" min="1000" placeholder="0" required 
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-lg font-mono text-white focus:outline-none focus:border-zinc-500 transition-colors">
+                </div>
+
+                <div class="grid grid-cols-4 gap-2">
+                    <button type="button" onclick="setQuickDeposit(20000)" class="py-1.5 text-xs font-mono bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-300">+20k</button>
+                    <button type="button" onclick="setQuickDeposit(50000)" class="py-1.5 text-xs font-mono bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-300">+50k</button>
+                    <button type="button" onclick="setQuickDeposit(100000)" class="py-1.5 text-xs font-mono bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-300">+100k</button>
+                    <button type="button" onclick="setQuickDeposit(500000)" class="py-1.5 text-xs font-mono bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-300">+500k</button>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-mono text-zinc-400 uppercase">Kategori / Sumber</label>
+                    <select id="depositCategory" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500">
+                        <option value="Setoran Tabungan">Setoran Tabungan</option>
+                        <option value="Gaji / Main Income">Gaji / Main Income</option>
+                        <option value="Bonus / Hadiah">Bonus / Hadiah</option>
+                        <option value="Investasi / Profit">Investasi / Profit</option>
+                        <option value="Lain-lain">Lain-lain</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-mono text-zinc-400 uppercase">Catatan / Deskripsi</label>
+                    <input type="text" id="depositNote" placeholder="Contoh: Nabung rutin minggu ini..." 
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500">
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-zinc-100/10">
+                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                    <span>Lanjut Scan QR DANA</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: TARIK SALDO -->
+    <div id="withdrawModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-5 relative shadow-2xl animate-in">
+            <button onclick="closeModal('withdrawModal')" class="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-100 border border-zinc-700">
+                    <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Tarik Saldo Tabungan</h3>
+                    <p class="text-xs text-zinc-400">Pencairan dana dari tabungan berdua</p>
+                </div>
+            </div>
+
+            <form onsubmit="handleWithdrawSubmit(event)" class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-mono text-zinc-400 uppercase">Nominal Penarikan (Rp)</label>
+                    <input type="number" id="withdrawAmount" min="1000" placeholder="0" required 
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-lg font-mono text-white focus:outline-none focus:border-zinc-500 transition-colors">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-mono text-zinc-400 uppercase">Kategori Kebutuhan</label>
+                    <select id="withdrawCategory" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500">
+                        <option value="Liburan / Travel">Liburan / Travel</option>
+                        <option value="Belanja Kebutuhan">Belanja Kebutuhan</option>
+                        <option value="Dana Darurat">Dana Darurat</option>
+                        <option value="Makan & Refreshing">Makan & Refreshing</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-mono text-zinc-400 uppercase">Catatan / Keperluan</label>
+                    <input type="text" id="withdrawNote" placeholder="Contoh: Beli tiket pesawat..." 
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500">
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl border border-zinc-700 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Proses Penarikan</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: QR DANA & FAST BANK TRANSFER -->
+    <div id="qrModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-5 relative shadow-2xl animate-in text-center">
+            <button onclick="closeModal('qrModal')" class="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div>
+                <h3 class="text-base font-bold text-white">QRIS / QR DANA</h3>
+                <p class="text-xs text-zinc-400">Scan QR atau pilih aplikasi bank di bawah untuk transfer</p>
+            </div>
+
+            <div class="p-3 bg-white rounded-2xl inline-block shadow-xl border-4 border-zinc-800 max-w-[220px] mx-auto">
+                <img id="qrImageDisplay" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=DANA_PAYMENT_081234567890" 
+                     alt="QR DANA" class="w-full h-auto rounded-lg object-contain">
+            </div>
+
+            <div>
+                <button onclick="downloadQRImage()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono rounded-xl border border-zinc-700 transition-all inline-flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Unduh Gambar QR</span>
+                </button>
+            </div>
+
+            <div class="p-3 bg-zinc-950 rounded-xl border border-zinc-800/80 text-left space-y-1 font-mono text-xs">
+                <div class="flex justify-between text-zinc-400">
+                    <span>Nominal Transfer:</span>
+                    <span id="qrAmountText" class="text-white font-bold">Rp 0</span>
+                </div>
+                <div class="flex justify-between text-zinc-400">
+                    <span>Tujuan / Akun:</span>
+                    <span class="text-zinc-300">DANA / QRIS</span>
+                </div>
+            </div>
+
+            <div class="space-y-2 text-left">
+                <p class="text-xs font-mono text-zinc-400 uppercase">Atau Buka App Bank Langsung (Auto-Copy):</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <button onclick="openBankApp('seabank')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center gap-2 text-xs font-medium text-zinc-200 transition-all">
+                        <span class="w-2 h-2 rounded-full bg-orange-500"></span> SeaBank
+                    </button>
+                    <button onclick="openBankApp('dana')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center gap-2 text-xs font-medium text-zinc-200 transition-all">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> DANA
+                    </button>
+                    <button onclick="openBankApp('bca')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center gap-2 text-xs font-medium text-zinc-200 transition-all">
+                        <span class="w-2 h-2 rounded-full bg-blue-600"></span> BCA
+                    </button>
+                    <button onclick="openBankApp('gopay')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center gap-2 text-xs font-medium text-zinc-200 transition-all">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> GoPay
+                    </button>
+                    <button onclick="openBankApp('shopeepay')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center gap-2 text-xs font-medium text-zinc-200 transition-all">
+                        <span class="w-2 h-2 rounded-full bg-orange-600"></span> ShopeePay
+                    </button>
+                    <button onclick="openBankApp('mandiri')" class="p-2.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center gap-2 text-xs font-medium text-zinc-200 transition-all">
+                        <span class="w-2 h-2 rounded-full bg-yellow-500"></span> Mandiri
+                    </button>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="confirmDeposit()" class="w-full py-3 bg-zinc-100 hover:bg-white text-zinc-950 font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                    <span>Konfirmasi Transfer Masuk</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: DIGITAL THERMAL RECEIPT -->
+    <div id="receiptModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 space-y-5 relative shadow-2xl animate-in">
+            <button onclick="closeModal('receiptModal')" class="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <!-- Thermal Receipt Container -->
+            <div id="thermalReceipt" class="bg-zinc-950 border border-zinc-800 rounded-xl p-5 font-mono text-xs text-zinc-200 space-y-4 shadow-inner">
+                <div class="text-center space-y-1 pb-3 border-b border-dashed border-zinc-800">
+                    <h4 class="text-sm font-bold tracking-widest text-white uppercase">Tabungan Berdua</h4>
+                    <p class="text-[10px] text-zinc-500">STRUK TABUNGAN BERDUA</p>
+                    <p id="receiptDate" class="text-[10px] text-zinc-400">-</p>
+                </div>
+
+                <div class="space-y-1.5 text-[11px]">
+                    <div class="flex justify-between">
+                        <span class="text-zinc-500">ID TRX:</span>
+                        <span id="receiptId" class="text-zinc-300">#TRX-000000</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-zinc-500">TIPE:</span>
+                        <span id="receiptType" class="font-bold text-emerald-400">SETORAN</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-zinc-500">KATEGORI:</span>
+                        <span id="receiptCategory" class="text-zinc-300">Tabungan</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-zinc-500">METODE:</span>
+                        <span id="receiptMethod" class="text-zinc-300">QR DANA / QRIS</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-zinc-500">CATATAN:</span>
+                        <span id="receiptNote" class="text-zinc-300 text-right truncate max-w-[150px]">-</span>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-dashed border-zinc-800 space-y-1.5">
+                    <div class="flex justify-between text-sm font-bold">
+                        <span class="text-zinc-400">NOMINAL:</span>
+                        <span id="receiptAmount" class="text-white">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between text-[11px]">
+                        <span class="text-zinc-500">SALDO AKHIR:</span>
+                        <span id="receiptPostBalance" class="text-zinc-300">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="text-center pt-2 border-t border-dashed border-zinc-800 text-[10px] text-zinc-500 space-y-0.5">
+                    <p>*** TERIMA KASIH ***</p>
+                    <p>Tabungan Berdua Terverifikasi</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="downloadReceiptPNG()" class="py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Unduh PNG</span>
+                </button>
+                <button onclick="copyReceiptText()" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold rounded-xl text-xs border border-zinc-700 transition-all flex items-center justify-center gap-1.5">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    <span>Salin Teks</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
