@@ -1,4 +1,4 @@
-// MONO.DUO — Tabungan Berdua JavaScript Engine
+// MONO.DUO — Tabungan Berdua Engine
 
 let appState = {
     balance: 0,
@@ -30,7 +30,7 @@ function loadState() {
             appState.target = parsed.target || appState.target;
             appState.transactions = parsed.transactions || [];
 
-            // Pastikan semua transaksi lama punya ID unik
+            // Pastikan setiap transaksi memiliki ID unik
             appState.transactions.forEach((tx, index) => {
                 if (!tx.id) {
                     tx.id = 'TRX-' + (Date.now() + index);
@@ -51,7 +51,7 @@ function saveState() {
     }));
 }
 
-// Render UI Components
+// Render All Components
 function renderAll() {
     // 1. Balance Display
     document.getElementById('balanceDisplay').innerText = formatRupiah(appState.balance);
@@ -68,13 +68,16 @@ function renderAll() {
     // 4. Update Chart
     updateChart();
 
+    // 5. Update MONO.GROW (Real-Time Holding Calculation)
+    updateGrowSection();
+
     // Re-initialize Lucide Icons
     if (window.lucide) lucide.createIcons();
 }
 
 // Format Currency to IDR
 function formatRupiah(num) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
 }
 
 // Format Date Real-Time
@@ -89,6 +92,27 @@ function formatDate(dateStr) {
         minute: '2-digit',
         second: '2-digit'
     }).replace(/\./g, ':');
+}
+
+// Switch Liquid Nav Tabs
+function switchTab(index, tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById(tabId).classList.remove('hidden');
+
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById(`navItem${index}`).classList.add('active');
+
+    const indicator = document.getElementById('navIndicator');
+    indicator.setAttribute('data-active', index);
+
+    // Dynamic icon update for indicator
+    const iconMap = ['home', 'activity', 'trending-up'];
+    const indicatorIcon = document.getElementById('indicatorIcon');
+    if (indicatorIcon) {
+        indicatorIcon.setAttribute('data-lucide', iconMap[index]);
+    }
+
+    if (window.lucide) lucide.createIcons();
 }
 
 // Modal Control
@@ -140,25 +164,59 @@ function downloadQRImage() {
     showToast('Mengunduh Gambar QR DANA...', 'info');
 }
 
-// Direct Bank Launcher
+// Direct Bank Launcher (Support Android & iOS tanpa setTimeout)
 function openBankApp(appName) {
     const danaNumber = '081234567890';
-    navigator.clipboard.writeText(danaNumber);
     
+    // 1. Salin nomor DANA ke clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(danaNumber);
+    } else {
+        const tempInput = document.createElement('input');
+        tempInput.value = danaNumber;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+    }
+
+    // 2. Deteksi OS HP (Android vs iOS)
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isAndroid = /Android/i.test(ua);
+
+    // 3. Custom URL Scheme / Intent Deep Link
+    let appUrl = '#';
+    switch (appName) {
+        case 'seabank':
+            appUrl = 'seabank://';
+            break;
+        case 'dana':
+            appUrl = 'dana://';
+            break;
+        case 'bca':
+            appUrl = isAndroid 
+                ? 'intent://#Intent;package=com.bca;scheme=bcamobile;end;' 
+                : 'bcamobile://';
+            break;
+        case 'gopay':
+            appUrl = 'gopay://';
+            break;
+        case 'shopeepay':
+            appUrl = 'shopee://';
+            break;
+        case 'mandiri':
+            appUrl = isAndroid 
+                ? 'intent://#Intent;package=id.co.bankmandiri.livin;scheme=livin;end;' 
+                : 'bankmandiri://';
+            break;
+    }
+
     showToast(`Nomor DANA (${danaNumber}) disalin! Membuka ${appName.toUpperCase()}...`, 'success');
 
-    setTimeout(() => {
-        let appUrl = '#';
-        switch (appName) {
-            case 'seabank': appUrl = 'seabank://'; break;
-            case 'dana': appUrl = 'dana://'; break;
-            case 'bca': appUrl = 'bca://'; break;
-            case 'gopay': appUrl = 'gopay://'; break;
-            case 'shopeepay': appUrl = 'shopeepay://'; break;
-            case 'mandiri': appUrl = 'livin://'; break;
-        }
+    // 4. Langsung eksekusi tanpa setTimeout agar tidak diblokir iOS Safari
+    if (appUrl !== '#') {
         window.location.href = appUrl;
-    }, 1200);
+    }
 }
 
 // Confirm Deposit
@@ -190,7 +248,7 @@ function confirmDeposit() {
     document.getElementById('depositNote').value = '';
 
     showToast('Transfer berhasil dikonfirmasi! Tabungan bertambah.', 'success');
-    showReceipt(newTx.id);
+    showReceipt(newTx);
 }
 
 // Handle Withdraw Form
@@ -232,7 +290,7 @@ function handleWithdrawSubmit(e) {
     document.getElementById('withdrawNote').value = '';
 
     showToast('Penarikan dana berhasil diproses.', 'info');
-    showReceipt(newTx.id);
+    showReceipt(newTx);
 }
 
 // Render Transactions List
@@ -281,24 +339,36 @@ function renderTransactions() {
                     <p class="text-[10px] font-mono text-zinc-500">Saldo: ${formatRupiah(tx.postBalance)}</p>
                 </div>
                 
-                <button onclick="showReceipt('${tx.id}')" title="Lihat Struk" class="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors">
+                <button type="button" class="btn-receipt p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors" title="Lihat Struk">
                     <i data-lucide="receipt" class="w-4 h-4"></i>
                 </button>
 
-                <button onclick="deleteTransaction('${tx.id}')" title="Hapus Mutasi" class="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
+                <button type="button" class="btn-delete p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors" title="Hapus Mutasi">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
         `;
+
+        const receiptBtn = card.querySelector('.btn-receipt');
+        const deleteBtn = card.querySelector('.btn-delete');
+
+        if (receiptBtn) {
+            receiptBtn.addEventListener('click', () => showReceipt(tx));
+        }
+
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => deleteTransaction(tx.id));
+        }
+
         container.appendChild(card);
     });
 }
 
-// Hapus Mutasi Spesifik
+// Hapus Mutasi Spesifik & Recalculate
 function deleteTransaction(id) {
     const txIndex = appState.transactions.findIndex(t => t.id === id);
     if (txIndex === -1) {
-        showToast('Transaksi nggak ditemukan', 'error');
+        showToast('Transaksi tidak ditemukan', 'error');
         return;
     }
 
@@ -315,7 +385,7 @@ function deleteTransaction(id) {
     showToast('Mutasi berhasil dihapus & saldo disesuaikan.', 'info');
 }
 
-// Rekalkulasi Saldo
+// Rekalkulasi Saldo Keseluruhan
 function recalculateState() {
     let runningBalance = 0;
     const chronological = [...appState.transactions].reverse();
@@ -342,10 +412,63 @@ function filterMutasi(type) {
     if (window.lucide) lucide.createIcons();
 }
 
+// MONO.GROW Engine — Calculation Based on Real Deposit Timestamp
+function updateGrowSection() {
+    const annualRate = 0.0525; // 5.25% p.a.
+    const currentBalance = appState.balance;
+
+    // Daily rate
+    const dailyRate = annualRate / 365;
+    const dailyYieldEstimated = Math.floor(currentBalance * dailyRate);
+
+    // Hitung Imbalan Real berdasarkan selisih hari timestamp transaksi
+    let totalRealEarned = 0;
+    const now = new Date();
+
+    appState.transactions.forEach(tx => {
+        if (tx.type === 'in' && tx.date) {
+            const txDate = new Date(tx.date);
+            const diffTime = Math.max(0, now - txDate);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 1) {
+                totalRealEarned += Math.floor(tx.amount * dailyRate * diffDays);
+            }
+        }
+    });
+
+    document.getElementById('dailyYieldText').innerText = `+${formatRupiah(dailyYieldEstimated)}`;
+    document.getElementById('totalWithYieldDisplay').innerText = formatRupiah(currentBalance + totalRealEarned);
+    document.getElementById('yearYieldDisplay').innerText = `+${formatRupiah(Math.floor(currentBalance * annualRate))}`;
+
+    // Update Detail Holding Banner
+    const holdingDetailEl = document.getElementById('holdingStatusDetail');
+    if (holdingDetailEl) {
+        if (currentBalance === 0) {
+            holdingDetailEl.innerText = "Belum ada saldo mengendap di vault. Isi tabungan untuk mulai menghitung imbalan.";
+        } else if (totalRealEarned === 0) {
+            holdingDetailEl.innerText = `Saldo ${formatRupiah(currentBalance)} baru masuk. Imbalan pertama (+${formatRupiah(dailyYieldEstimated)}/hari) akan cair setelah mengendap 1 hari.`;
+        } else {
+            holdingDetailEl.innerText = `Saldo telah mengendap dan berhasil menghasilkan imbalan cair real sebesar +${formatRupiah(totalRealEarned)}.`;
+        }
+    }
+
+    // Compound Interest Projections
+    const calculateCompound = (principal, rate, days) => {
+        const years = days / 365;
+        const total = principal * Math.pow((1 + rate / 365), 365 * years);
+        return Math.floor(total - principal);
+    };
+
+    document.getElementById('proj1M').innerText = `+${formatRupiah(calculateCompound(currentBalance, annualRate, 30))}`;
+    document.getElementById('proj6M').innerText = `+${formatRupiah(calculateCompound(currentBalance, annualRate, 180))}`;
+    document.getElementById('proj1Y').innerText = `+${formatRupiah(calculateCompound(currentBalance, annualRate, 365))}`;
+    document.getElementById('proj3Y').innerText = `+${formatRupiah(calculateCompound(currentBalance, annualRate, 1095))}`;
+}
+
 // Show Receipt Modal
 let activeReceiptTx = null;
-function showReceipt(idOrTx) {
-    const tx = typeof idOrTx === 'object' ? idOrTx : appState.transactions.find(t => t.id === idOrTx);
+function showReceipt(tx) {
     if (!tx) return;
 
     activeReceiptTx = tx;
@@ -487,3 +610,20 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// Attach Functions to Window Object
+window.switchTab = switchTab;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.setQuickDeposit = setQuickDeposit;
+window.handleDepositSubmit = handleDepositSubmit;
+window.handleWithdrawSubmit = handleWithdrawSubmit;
+window.downloadQRImage = downloadQRImage;
+window.openBankApp = openBankApp;
+window.confirmDeposit = confirmDeposit;
+window.filterMutasi = filterMutasi;
+window.showReceipt = showReceipt;
+window.deleteTransaction = deleteTransaction;
+window.downloadReceiptPNG = downloadReceiptPNG;
+window.copyReceiptText = copyReceiptText;
+window.editTarget = editTarget;
