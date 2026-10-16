@@ -1,5 +1,9 @@
-// MONO.DUO — Tabungan Berdua Engine
+// Lock Pinch-Zoom Gesture di iOS Safari
+document.addEventListener('gesturestart', function (e) {
+    e.preventDefault();
+});
 
+// MONO.DUO — Tabungan Berdua Engine
 let appState = {
     balance: 0,
     target: {
@@ -30,7 +34,6 @@ function loadState() {
             appState.target = parsed.target || appState.target;
             appState.transactions = parsed.transactions || [];
 
-            // Pastikan setiap transaksi memiliki ID unik
             appState.transactions.forEach((tx, index) => {
                 if (!tx.id) {
                     tx.id = 'TRX-' + (Date.now() + index);
@@ -53,25 +56,17 @@ function saveState() {
 
 // Render All Components
 function renderAll() {
-    // 1. Balance Display
     document.getElementById('balanceDisplay').innerText = formatRupiah(appState.balance);
 
-    // 2. Target Progress
     const targetPercentage = Math.min(100, Math.round((appState.balance / appState.target.amount) * 100)) || 0;
     document.getElementById('targetName').innerText = appState.target.name;
     document.getElementById('targetProgressText').innerText = `${targetPercentage}% (${formatRupiah(appState.balance)} / ${formatRupiah(appState.target.amount)})`;
     document.getElementById('targetProgressBar').style.width = `${targetPercentage}%`;
 
-    // 3. Transactions List
     renderTransactions();
-
-    // 4. Update Chart
     updateChart();
-
-    // 5. Update MONO.GROW (Real-Time Holding Calculation)
     updateGrowSection();
 
-    // Re-initialize Lucide Icons
     if (window.lucide) lucide.createIcons();
 }
 
@@ -105,7 +100,6 @@ function switchTab(index, tabId) {
     const indicator = document.getElementById('navIndicator');
     indicator.setAttribute('data-active', index);
 
-    // Dynamic icon update for indicator
     const iconMap = ['home', 'activity', 'trending-up'];
     const indicatorIcon = document.getElementById('indicatorIcon');
     if (indicatorIcon) {
@@ -164,11 +158,11 @@ function downloadQRImage() {
     showToast('Mengunduh Gambar QR DANA...', 'info');
 }
 
-// Direct Bank Launcher (Support Android & iOS tanpa setTimeout)
+// Direct Bank Launcher Aman untuk iOS Safari (Tanpa Popup Error)
 function openBankApp(appName) {
-    const danaNumber = '081234567890';
+    const danaNumber = '08317305'; // Nomor DANA
     
-    // 1. Salin nomor DANA ke clipboard
+    // 1. Salin nomor DANA ke Clipboard
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(danaNumber);
     } else {
@@ -180,42 +174,29 @@ function openBankApp(appName) {
         document.body.removeChild(tempInput);
     }
 
-    // 2. Deteksi OS HP (Android vs iOS)
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    const isAndroid = /Android/i.test(ua);
+    showToast(`Nomor DANA (${danaNumber}) berhasil disalin!`, 'success');
 
-    // 3. Custom URL Scheme / Intent Deep Link
-    let appUrl = '#';
-    switch (appName) {
-        case 'seabank':
-            appUrl = 'seabank://';
-            break;
-        case 'dana':
-            appUrl = 'dana://';
-            break;
-        case 'bca':
-            appUrl = isAndroid 
-                ? 'intent://#Intent;package=com.bca;scheme=bcamobile;end;' 
-                : 'bcamobile://';
-            break;
-        case 'gopay':
-            appUrl = 'gopay://';
-            break;
-        case 'shopeepay':
-            appUrl = 'shopee://';
-            break;
-        case 'mandiri':
-            appUrl = isAndroid 
-                ? 'intent://#Intent;package=id.co.bankmandiri.livin;scheme=livin;end;' 
-                : 'bankmandiri://';
-            break;
-    }
+    // 2. Deep Link Scheme
+    const appSchemes = {
+        dana: 'dana://',
+        seabank: 'seabank://',
+        bca: 'bcamobile://',
+        gopay: 'gopay://',
+        shopeepay: 'shopee://',
+        mandiri: 'bankmandiri://'
+    };
 
-    showToast(`Nomor DANA (${danaNumber}) disalin! Membuka ${appName.toUpperCase()}...`, 'success');
+    // 3. Eksekusi Pembukaan App via Hidden Iframe
+    const scheme = appSchemes[appName];
+    if (scheme) {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = scheme;
+        document.body.appendChild(iframe);
 
-    // 4. Langsung eksekusi tanpa setTimeout agar tidak diblokir iOS Safari
-    if (appUrl !== '#') {
-        window.location.href = appUrl;
+        setTimeout(() => {
+            document.body.removeChild(iframe);
+        }, 1000);
     }
 }
 
@@ -417,7 +398,6 @@ function updateGrowSection() {
     const annualRate = 0.0525; // 5.25% p.a.
     const currentBalance = appState.balance;
 
-    // Daily rate
     const dailyRate = annualRate / 365;
     const dailyYieldEstimated = Math.floor(currentBalance * dailyRate);
 
@@ -441,7 +421,6 @@ function updateGrowSection() {
     document.getElementById('totalWithYieldDisplay').innerText = formatRupiah(currentBalance + totalRealEarned);
     document.getElementById('yearYieldDisplay').innerText = `+${formatRupiah(Math.floor(currentBalance * annualRate))}`;
 
-    // Update Detail Holding Banner
     const holdingDetailEl = document.getElementById('holdingStatusDetail');
     if (holdingDetailEl) {
         if (currentBalance === 0) {
@@ -453,7 +432,6 @@ function updateGrowSection() {
         }
     }
 
-    // Compound Interest Projections
     const calculateCompound = (principal, rate, days) => {
         const years = days / 365;
         const total = principal * Math.pow((1 + rate / 365), 365 * years);
@@ -611,7 +589,7 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Attach Functions to Window Object
+// Global Bindings
 window.switchTab = switchTab;
 window.openModal = openModal;
 window.closeModal = closeModal;

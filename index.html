@@ -2,7 +2,8 @@
 <html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Viewport dikunci agar tidak bisa di-zoom di HP/iOS Safari -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MONO.DUO — Tabungan Berdua</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,10 +33,10 @@
 </head>
 <body class="bg-black text-zinc-100 font-sans antialiased selection:bg-emerald-500 selection:text-black min-h-screen pb-28">
 
-    <!-- Toast Container -->
+    <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Header / Navbar Top -->
+    <!-- Header Navbar Top -->
     <header class="sticky top-0 z-30 bg-black/80 backdrop-blur-md border-b border-zinc-800/60 px-4 py-3">
         <div class="max-w-md mx-auto flex items-center justify-between">
             <div class="flex items-center gap-2.5">
@@ -63,7 +64,7 @@
     <!-- Main Content Container -->
     <main class="max-w-md mx-auto px-4 pt-4">
 
-        <!-- TAB 1: VAULT (BERANDA) -->
+        <!-- TAB 1: BERANDA (VAULT) -->
         <section id="tabVault" class="tab-content space-y-4">
             <!-- Balance Hero Card -->
             <div class="p-5 rounded-2xl bg-zinc-950/90 border border-zinc-800/80 shadow-2xl relative overflow-hidden">
@@ -141,12 +142,10 @@
             </div>
 
             <!-- List Mutasi Transaksi -->
-            <div id="txList" class="space-y-2">
-                <!-- Mutasi item di-render secara dinamis via JS -->
-            </div>
+            <div id="txList" class="space-y-2"></div>
         </section>
 
-        <!-- TAB 3: GROW (IMBALAN REAL-TIME) -->
+        <!-- TAB 3: MONO.GROW (PERTUMBUHAN & IMBALAN) -->
         <section id="tabGrow" class="tab-content hidden space-y-4">
             <div class="p-5 rounded-2xl bg-zinc-950/90 border border-zinc-800/80 shadow-2xl relative overflow-hidden space-y-4">
                 <div class="flex items-center justify-between">
@@ -155,7 +154,7 @@
                             <i data-lucide="trending-up" class="w-4 h-4"></i>
                         </div>
                         <div>
-                            <h2 class="text-sm font-bold text-white">GROW</h2>
+                            <h2 class="text-sm font-bold text-white">MONO.GROW</h2>
                             <p class="text-[10px] text-zinc-400">Proyeksi Imbalan & Hasil Tabungan</p>
                         </div>
                     </div>
@@ -165,7 +164,7 @@
                 <div class="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 text-center space-y-1">
                     <p class="text-[11px] text-zinc-400 font-medium">Estimasi Imbalan Harian Hari Ini</p>
                     <div id="dailyYieldText" class="text-2xl font-extrabold font-mono text-emerald-400">+Rp 0</div>
-                    <p id="yieldInfoSub" class="text-[10px] text-zinc-500 font-mono pt-1">Estimasi imbalan harian otomatis berdasar saldo tabungan saat ini</p>
+                    <p class="text-[10px] text-zinc-500 font-mono pt-1">Estimasi imbalan harian otomatis berdasar saldo tabungan saat ini</p>
                 </div>
 
                 <!-- Status Banner Holding -->
@@ -241,7 +240,7 @@
             </button>
             <button onclick="switchTab(2, 'tabGrow')" id="navItem2" class="nav-item">
                 <i data-lucide="trending-up" class="w-5 h-5"></i>
-                <span>GROW</span>
+                <span>MONO.GROW</span>
             </button>
         </div>
     </nav>
@@ -263,10 +262,10 @@
                     <input type="number" id="depositAmount" placeholder="Contoh: 50000" min="1000" required class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-mono text-sm focus:outline-none focus:border-emerald-500">
                     
                     <div class="grid grid-cols-4 gap-1.5 mt-2">
-                        <button type="button" onclick="setQuickDeposit(5000)" class="py-1 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-300">5000</button>
-                        <button type="button" onclick="setQuickDeposit(10000)" class="py-1 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-300">10000</button>
-                        <button type="button" onclick="setQuickDeposit(15000)" class="py-1 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-300">15000</button>
-                        <button type="button" onclick="setQuickDeposit(20000)" class="py-1 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-300">20000</button>
+                        <button type="button" onclick="setQuickDeposit(10000)" class="py-1 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-300">+10k</button>
+                        <button type="button" onclick="setQuickDeposit(25000)" class="py-1 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-300">+25k</button>
+                        <button type="button" onclick="setQuickDeposit(50000)" class="py-1 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-300">+50k</button>
+                        <button type="button" onclick="setQuickDeposit(100000)" class="py-1 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-300">+100k</button>
                     </div>
                 </div>
 
@@ -303,9 +302,13 @@
                 <button onclick="closeModal('qrModal')" class="p-1 text-zinc-500 hover:text-white rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
 
-            <!-- Display Gambar QR -->
+            <!-- Display Gambar QR dengan Fallback OnError -->
             <div class="p-3 bg-white rounded-2xl flex flex-col items-center justify-center max-w-[260px] mx-auto shadow-xl">
-                <img id="qrImageDisplay" src="/file/qr dana.png" alt="QR DANA" class="w-full h-auto rounded-lg object-contain">
+                <img id="qrImageDisplay" 
+                     src="/file/qr.png" 
+                     alt="QR DANA" 
+                     class="w-full h-auto rounded-lg object-contain"
+                     onerror="this.onerror=null; this.src='qr dana.jpg';">
             </div>
 
             <button onclick="downloadQRImage()" class="w-full py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
@@ -324,7 +327,7 @@
                 </div>
             </div>
 
-            <!-- Direct App Launcher (Android & iOS) -->
+            <!-- Direct App Launcher (Aman untuk iOS Safari) -->
             <div class="space-y-2 pt-1">
                 <p class="text-[10px] text-zinc-500 font-mono text-center uppercase tracking-wider">Atau Buka App Bank Langsung (Auto-Copy):</p>
                 <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
@@ -406,7 +409,7 @@
             <!-- Thermal Receipt Card -->
             <div id="thermalReceipt" class="p-4 bg-zinc-900 border border-zinc-800 rounded-xl space-y-3 font-mono text-xs text-zinc-300">
                 <div class="text-center border-b border-dashed border-zinc-800 pb-3">
-                    <h4 class="font-bold text-white text-sm">TABUNGAN</h4>
+                    <h4 class="font-bold text-white text-sm">MONO.DUO</h4>
                     <p class="text-[10px] text-zinc-500">Tabungan Berdua Digital</p>
                 </div>
 
@@ -441,7 +444,7 @@
         </div>
     </div>
 
-    <!-- Application Script Engine -->
+    <!-- Application Engine Script -->
     <script src="script.js"></script>
 </body>
 </html>

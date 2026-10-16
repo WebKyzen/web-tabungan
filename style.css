@@ -1,3 +1,12 @@
+/* Lock Zoom & Force Vertical Scroll Only */
+html, body {
+    touch-action: pan-y;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
